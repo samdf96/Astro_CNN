@@ -27,10 +27,10 @@ logging.getLogger("wcs").setLevel(logging.WARNING)
 
 IMAGE_DIR = '/home/samuelfielder/Desktop/Astro_Project/Images/'
 
-#Creating Nested List of Filenames
+# Creating Nested List of Filenames
 data = galaxy_table_maker(IMAGE_DIR)
 
-#Splitting Galaxy names off of directory strings
+# Splitting Galaxy names off of directory strings
 galaxies = []
 for i in range(len(data[0])):
     name = name_splitter(data[0][i])
@@ -40,20 +40,19 @@ for i in range(len(data[0])):
 # Finding Morphology for Galaxies
 morphology = morph_finder(galaxies)
 """
-    
+
 # Temporary Import of Morphologies
 with open('morphology_list.txt', 'r') as file:
     lines = file.readlines()
 
-#%%
+test_data_1, test_header_1, test_data_2, \
+ test_header_2 = data_preparer(data[0][0], data[1][0])
 
-test_data_1, test_header_1, test_data_2, test_header_2 = data_preparer(data[0][0], data[1][0])
 
-
-#%%
 image_visualizer(test_data_1, test_header_1)
 image_visualizer(test_data_2, test_header_2)
-#%%
+
+
 #test_wt_data = np.nan_to_num(test_wt_data, nan=1)
 #test_wt_data[np.isnan(test_wt_data)]=float("-inf")
 

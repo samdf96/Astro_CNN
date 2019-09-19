@@ -15,6 +15,7 @@ from reproject import reproject_interp
 import matplotlib.pyplot as plt
 import astropy.wcs as wcs
 
+
 def galaxy_table_maker(directory):
     """ Takes input directory and creates table with six columns, each with
         the following: Ch1, Ch2, Ch1_wt, Ch2_wt, Ch1_mask, Ch2_mask.
@@ -53,6 +54,7 @@ def galaxy_table_maker(directory):
 
     return image_lists
 
+
 def galaxy_query(name):
     """ Querys astropy for the morphology of the given galaxy.
 
@@ -68,6 +70,7 @@ def galaxy_query(name):
 
     return morphology
 
+
 def name_splitter(name):
     """ Takes string name of directory, and splits off the galaxy name.
 
@@ -79,6 +82,7 @@ def name_splitter(name):
     galaxy = name.split('/')[-1].split('.')[0]
 
     return galaxy
+
 
 def data_grabber(directory_string):
     """ Takes a file location and extracts the image data alongside
@@ -98,6 +102,7 @@ def data_grabber(directory_string):
 
     return info, header, data
 
+
 def morph_finder(galaxy_list):
     """ Finds morphological type of galaxy based on Astropy Query, with an
         galaxy name as an input.
@@ -114,12 +119,14 @@ def morph_finder(galaxy_list):
 
     return morph_list
 
+
 def location_query(name):
     results_table = Simbad.query_object(name)
     ra = results_table['RA']
     dec = results_table['DEC']
 
     return ra, dec
+
 
 def kadanes(array):
     """ Finds sum of maximum subarray of inputted array. Also returns
@@ -132,7 +139,7 @@ def kadanes(array):
         - max_start: float
         - max_end: float
     """
-    #Initialize Values
+    # Initialize Values
     maximum = 0
     max_start = -1
     max_end = -1
@@ -153,6 +160,7 @@ def kadanes(array):
 
     return maximum, max_start, max_end
 
+
 def max_rectangle(array):
     """ Finds the maximum sum subarray of any inputted array.
         Uses the kadanes definition for sub-routines.
@@ -167,23 +175,23 @@ def max_rectangle(array):
         - (rec_top, rec_bot): tuple
             - Top to bottom indexes of found subarray
     """
-    #Setting Parameters
+    # Setting Parameters
     rows = len(array)
     cols = len(array[0])
 
-    #Initialize Values
+    # Initialize Values
     max_sum = float("-inf")
     rec_left, rec_right, rec_top, rec_bot = (-1, -1, -1, -1)
 
-    #Looping through all iterations of columns
+    # Looping through all iterations of columns
     for left in range(cols):
-        temp = [0 for _ in range(rows)] #Setting temp array
+        temp = [0 for _ in range(rows)]  # Setting temp array
 
         for right in range(left, cols):
 
-            #Iterating through all rows
+            # Iterating through all rows
             for i in range(rows):
-                temp[i] += array[i][right] #Summing for Kadanes
+                temp[i] += array[i][right]  # Summing for Kadanes
 
             maximum, max_start, max_end = kadanes(temp)
             if maximum > max_sum:
@@ -194,6 +202,7 @@ def max_rectangle(array):
                 rec_bot = max_end
 
     return max_sum, (rec_left, rec_right), (rec_top, rec_bot)
+
 
 def reproject_fits(filename, header):
     """ Reproject one data array from fits, into the WCS coordinates
@@ -212,6 +221,7 @@ def reproject_fits(filename, header):
 
     return data, footprint
 
+
 def image_visualizer(data, header, plot_show=True, plot_return=False):
     """ Matplotlib plot using WCS coordinates. User can choose to
         return (fig,ax) components, and/or for the plot to be shown
@@ -223,7 +233,7 @@ def image_visualizer(data, header, plot_show=True, plot_return=False):
         - plot_show: boolean
         - plot_return: boolean
     """
-    #Creation of the WCS object
+    # Creation of the WCS object
     wcs_obj = wcs.WCS(header)
     fig = plt.figure()
     fig.add_subplot(111, projection=wcs_obj)
@@ -238,6 +248,7 @@ def image_visualizer(data, header, plot_show=True, plot_return=False):
         return fig
 
     return
+
 
 def data_preparer(filename_ch1, filename_ch2):
     """ Wrapper function that calls both channel images and returns
