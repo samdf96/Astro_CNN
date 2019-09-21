@@ -270,3 +270,32 @@ def data_preparer(filename_ch1, filename_ch2):
     data_ch2_rep, _ = reproject_fits(filename_ch2, header_ch1)
 
     return data_ch1, header_ch1, data_ch2_rep, header_ch2
+
+
+def string_trimmer(morph):
+    """ Returns singular typing of morphology."""
+    # Creating list of characters from input
+    morph_type = str()
+    morph_char = list(morph)
+
+    if ("E" in morph_char) & ("S" not in morph_char):
+        morph_type == str("E")
+    elif ("S" in morph_char) & ("E" not in morph_char):
+        morph_type = str("S")
+    elif ("S" in morph_char) & ("E" in morph_char):
+        morph_type = str("E")
+    else:
+        morph_type == None
+
+    return morph_type
+
+
+def box_maker(center_indexes, BOX_SIZE):
+    """ Returns new bounds for box, around center index."""
+    
+    x_min = int(center_indexes[1] - (BOX_SIZE/2))
+    x_max = int(center_indexes[1] + (BOX_SIZE/2))
+    y_min = int(center_indexes[1] - (BOX_SIZE/2))
+    y_max = int(center_indexes[1] + (BOX_SIZE/2))
+    
+    return x_min, x_max, y_min, y_max
