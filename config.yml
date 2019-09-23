@@ -8,6 +8,7 @@ search_strings:
 
 parameters:
     IMAGE_DIR: '/home/samuelfielder/Desktop/Astro_Project/Images/'
+    SAVE_DIR: '/home/samuelfielder/github/Astro_CNN/Processed_Data/'
     CONV_SIZE: 300
     SHOW_PLOTS: False
-    BOX_SIZE: 300
+    BOX_SIZE: 200

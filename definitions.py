@@ -25,10 +25,10 @@ logging.getLogger("astropy").setLevel(logging.WARNING)
 import yaml
 # Import Necessary Parameters here
 with open("config.yml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
 
 
-def galaxy_table_maker(directory):
+def galaxy_dict_maker(directory):
     """ Takes input directory and creates table with six columns, each with
         the following: Ch1, Ch2, Ch1_wt, Ch2_wt, Ch1_mask, Ch2_mask.
 
@@ -36,7 +36,7 @@ def galaxy_table_maker(directory):
             - directory: string
             - cfg['search_strings'][XX]: string from imported dictionary
         Outputs:
-            - image_lists: nested list
+            - data_dict: dictionary
     """
     phot_1 = glob.glob(directory+cfg['search_strings']['phot_1'])
     phot_1.sort()
@@ -56,16 +56,16 @@ def galaxy_table_maker(directory):
     final_mask_2 = glob.glob(directory+cfg['search_strings']['mask_2'])
     final_mask_2.sort()
 
-    image_lists = []
+    data_dict = {}
+    
+    data_dict['phot_1'] = phot_1
+    data_dict['phot_2'] = phot_2
+    data_dict['1_wt'] = phot_1_wt
+    data_dict['2_wt'] = phot_2_wt
+    data_dict['1_mask'] = final_mask_1
+    data_dict['2_mask'] = final_mask_2
 
-    image_lists.append(phot_1)
-    image_lists.append(phot_2)
-    image_lists.append(phot_1_wt)
-    image_lists.append(phot_2_wt)
-    image_lists.append(final_mask_1)
-    image_lists.append(final_mask_2)
-
-    return image_lists
+    return data_dict
 
 
 def galaxy_query(name):
@@ -228,20 +228,45 @@ def data_visualizer(phot_1_data, phot_1_header,
     return
 
 
-def string_trimmer(morph):
-    """ Returns singular typing of morphology."""
-    # Creating list of characters from input
-    morph_type = str()
-    morph_char = list(morph)
+def galaxy_visualizer(phot_1, phot_2, vmin=0, vmax=1):
+    
+    
+    colormap = plt.cm.viridis
+    fig = plt.figure(figsize=(10,10))
+    
+    # Phot 1 Data
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1.imshow(phot_1, cmap=colormap, vmin=vmin, vmax=vmax)
+    ax1.set_title('Channel 1 Data')
+    
+    # Phot 2 Data
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.imshow(phot_2, cmap=colormap, vmin=vmin, vmax=vmax)
+    ax2.set_title('Channel 2 Data')
+    
+    plt.show()
+    
+    return
 
-    if ("E" in morph_char) & ("S" not in morph_char):
-        morph_type == str("E")
-    elif ("S" in morph_char) & ("E" not in morph_char):
-        morph_type = str("S")
-    elif ("S" in morph_char) & ("E" in morph_char):
-        morph_type = str("E")
+def string_trimmer(morph):
+    """ Returns singular typing of morphology.
+    
+        Notes:
+            This function will detect: 'S', 'E', and 'S0'
+            morph typing, and set them accordingly.
+    """
+
+    morph_type = str()
+    
+    if 'E' in morph:
+        morph_type = str('E')
+    elif 'S' in morph:
+        if 'S0' in morph:
+            morph_type = str('E')
+        else:
+            morph_type = str('S')
     else:
-        morph_type == None
+        morph_type = str(None)
 
     return morph_type
 
