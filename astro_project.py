@@ -72,7 +72,8 @@ if os.path.isfile('morphology_list.txt'):
     with open('morphology_list.txt', 'r') as file:
         morphology = file.readlines()
 else:
-    print('Morphology_list.txt file not detected. Querying Simbad, and writing to file.')
+    print('Morphology_list.txt file not detected. Querying Simbad,\
+     and writing to file.')
     morphology = morph_finder(galaxies)
     with open('morphology_list.txt', 'w+') as file:
         for item in morphology:
@@ -83,7 +84,6 @@ else:
 phot_data = []
 label_data = []
 
-#%%
 """ Here starts the Main Loop for Pre-Processing"""
 for index in range(5):  # len(data['phot_1'])
     print('Working on index: ', index, '/', len(data['phot_1']))
@@ -143,20 +143,20 @@ for index in range(5):  # len(data['phot_1'])
     label_data.append(string_trimmer(morphology[index]))
 
 
-#%%
 # FITS File creation and data saving
-
 test_morphology = morphology[0:5]
 test_galaxies = galaxies[0:5]
 
+format_string_data = str(len(phot_data[0])) + 'D'
+
 data_column = fits.Column(name='data',
-                          format='D',
+                          format=format_string_data,
                           array=phot_data)
 label_column = fits.Column(name='label',
                            format='20A',
                            array=label_data)
 galaxy_column = fits.Column(name='galaxy',
-                            format='A20',
+                            format='20A',
                             array=test_galaxies)
 morphology_column = fits.Column(name='morphology',
                                 format='20A',
@@ -165,19 +165,18 @@ morphology_column = fits.Column(name='morphology',
 # Creating ColDefs object
 cols = fits.ColDefs([galaxy_column,
                      morphology_column,
-#                    data_column,
+                     data_column,
                      label_column])
 
 hdu = fits.BinTableHDU.from_columns(cols)
 
 if len(glob.glob(CURRENT_DIR + '*.fits')) > 0:
-    file_name = glob.glob(CURRENT_DIR + '*.fits')
+    file_name = glob.glob(CURRENT_DIR + '*.fits')[0]
     fits_name = file_name.split('/')[-1]
     os.rename(file_name, BACKUP_DIR + fits_name)
-    os.remove(file_name)
-else:
-    save_time = f'{datetime.now():%Y-%m-%d_%H:%M:%S}'
-    fits_save = CURRENT_DIR + 'processed_data_' + save_time + '.fits'
-    hdu.writeto(fits_save)
+
+save_time = f'{datetime.now():%Y-%m-%d_%H:%M:%S}'
+fits_save = CURRENT_DIR + 'processed_data_' + save_time + '.fits'
+hdu.writeto(fits_save)
 
 print("Time for Script to Complete: ", datetime.now() - startTime)
