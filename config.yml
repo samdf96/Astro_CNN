@@ -1,0 +1,13 @@
+search_strings:
+    phot_1: '*.phot.1.fits'
+    phot_2: '*.phot.2.fits'
+    wt_1: '*.phot.1_wt.fits'
+    wt_2: '*.phot.2_wt.fits'
+    mask_1: '*.1.final_mask.fits'
+    mask_2: '*.2.final_mask.fits'
+
+parameters:
+    IMAGE_DIR: '/home/samuelfielder/Desktop/Astro_Project/Images/'
+    CONV_SIZE: 300
+    SHOW_PLOTS: False
+    BOX_SIZE: 300

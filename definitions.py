@@ -15,6 +15,18 @@ from reproject import reproject_interp
 import matplotlib.pyplot as plt
 import astropy.wcs as wcs
 
+# To Turn off Warning Messages to console, from wcs library
+import logging
+# Turns off logging for wcs coordinate missing -SIP
+# Logger name for WCS package is astropy
+logging.getLogger("astropy").setLevel(logging.WARNING)
+
+# Importing Search Strings for galaxy table maker
+import yaml
+# Import Necessary Parameters here
+with open("config.yml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
+
 
 def galaxy_table_maker(directory):
     """ Takes input directory and creates table with six columns, each with
@@ -22,25 +34,26 @@ def galaxy_table_maker(directory):
 
         Inputs:
             - directory: string
+            - cfg['search_strings'][XX]: string from imported dictionary
         Outputs:
             - image_lists: nested list
     """
-    phot_1 = glob.glob(directory+'*.phot.1.fits')
+    phot_1 = glob.glob(directory+cfg['search_strings']['phot_1'])
     phot_1.sort()
 
-    phot_2 = glob.glob(directory+'*.phot.2.fits')
+    phot_2 = glob.glob(directory+cfg['search_strings']['phot_2'])
     phot_2.sort()
 
-    phot_1_wt = glob.glob(directory+'*.phot.1_wt.fits')
+    phot_1_wt = glob.glob(directory+cfg['search_strings']['wt_1'])
     phot_1_wt.sort()
 
-    phot_2_wt = glob.glob(directory+'*.phot.2_wt.fits')
+    phot_2_wt = glob.glob(directory+cfg['search_strings']['wt_2'])
     phot_2_wt.sort()
 
-    final_mask_1 = glob.glob(directory+'*.1.final_mask.fits')
+    final_mask_1 = glob.glob(directory+cfg['search_strings']['mask_1'])
     final_mask_1.sort()
 
-    final_mask_2 = glob.glob(directory+'*.2.final_mask.fits')
+    final_mask_2 = glob.glob(directory+cfg['search_strings']['mask_2'])
     final_mask_2.sort()
 
     image_lists = []
@@ -91,16 +104,14 @@ def data_grabber(directory_string):
     Inputs:
         - directory_string: string
     Outputs:
-        - info: bound method (contains text)
         - header: astropy.io.fits.header.Header
         - data: numpy.ndarray
     """
     with fits.open(directory_string) as hdul:
-        info = hdul.info
         data = hdul[0].data
         header = hdul[0].header
 
-    return info, header, data
+    return header, data
 
 
 def morph_finder(galaxy_list):
@@ -128,82 +139,6 @@ def location_query(name):
     return ra, dec
 
 
-def kadanes(array):
-    """ Finds sum of maximum subarray of inputted array. Also returns
-        the starting and ending indexes of the found subarray.
-
-    Inputs:
-        - array: numpy.array
-    Outputs:
-        - maximum: float
-        - max_start: float
-        - max_end: float
-    """
-    # Initialize Values
-    maximum = 0
-    max_start = -1
-    max_end = -1
-    current_start = 0
-    ongoing_max = 0
-
-    for i in range(0, len(array)):
-        ongoing_max += array[i]
-
-        if ongoing_max < 0:
-            ongoing_max = 0
-            current_start = i + 1
-
-        if ongoing_max > maximum:
-            max_start = current_start
-            max_end = i
-            maximum = ongoing_max
-
-    return maximum, max_start, max_end
-
-
-def max_rectangle(array):
-    """ Finds the maximum sum subarray of any inputted array.
-        Uses the kadanes definition for sub-routines.
-
-    Inputs:
-        - array: numpy.array
-    Outputs:
-        - rec_max: float
-            - Sum of found subarray
-        - (rec_left, rec_right): tuple
-            - Right to left indexes of found subarray
-        - (rec_top, rec_bot): tuple
-            - Top to bottom indexes of found subarray
-    """
-    # Setting Parameters
-    rows = len(array)
-    cols = len(array[0])
-
-    # Initialize Values
-    max_sum = float("-inf")
-    rec_left, rec_right, rec_top, rec_bot = (-1, -1, -1, -1)
-
-    # Looping through all iterations of columns
-    for left in range(cols):
-        temp = [0 for _ in range(rows)]  # Setting temp array
-
-        for right in range(left, cols):
-
-            # Iterating through all rows
-            for i in range(rows):
-                temp[i] += array[i][right]  # Summing for Kadanes
-
-            maximum, max_start, max_end = kadanes(temp)
-            if maximum > max_sum:
-                max_sum = maximum
-                rec_left = left
-                rec_right = right
-                rec_top = max_start
-                rec_bot = max_end
-
-    return max_sum, (rec_left, rec_right), (rec_top, rec_bot)
-
-
 def reproject_fits(filename, header):
     """ Reproject one data array from fits, into the WCS coordinates
         of another header. This will return a footprint array, as well
@@ -222,54 +157,75 @@ def reproject_fits(filename, header):
     return data, footprint
 
 
-def image_visualizer(data, header, plot_show=True, plot_return=False):
-    """ Matplotlib plot using WCS coordinates. User can choose to
-        return (fig,ax) components, and/or for the plot to be shown
-        automatically.
-
-    Inputs:
-        - data: numpy.array
-        - header: astropy.io.fits.header.Header
-        - plot_show: boolean
-        - plot_return: boolean
-    """
-    # Creation of the WCS object
-    wcs_obj = wcs.WCS(header)
-    fig = plt.figure()
-    fig.add_subplot(111, projection=wcs_obj)
-    plt.imshow(data, origin='lower', cmap=plt.cm.viridis)
-    plt.xlabel('RA')
-    plt.ylabel('Dec')
-
-    if plot_show:
-        plt.show()
-
-    if plot_return:
-        return fig
-
+def data_visualizer(phot_1_data, phot_1_header,
+                    wt_1_data, wt_1_header,
+                    conv_1,
+                    phot_2_rep_data,
+                    wt_2_rep_data,
+                    conv_2_rep,
+                    phot_2_data, phot_2_header,
+                    wt_2_data, wt_2_header,
+                    conv_2,
+                    ind_phot_1=None,
+                    ind_phot_2_rep=None):
+    
+    vir = plt.cm.viridis
+    
+    fig = plt.figure(figsize=(10,10))
+    
+    # Phot_1_data
+    ax1 = fig.add_subplot(3, 3, 1, projection=wcs.WCS(phot_1_header))
+    ax1.imshow(phot_1_data, cmap=vir)
+    ax1.set_title('Phot 1')
+    
+    # wt_1 data
+    ax2 = fig.add_subplot(3, 3, 2, projection=wcs.WCS(wt_1_header))
+    ax2.imshow(wt_1_data, cmap=vir)
+    ax2.set_title('Phot 1 wt')
+    
+    # conv_1 data
+    ax3 = fig.add_subplot(3, 3, 3, projection=wcs.WCS(wt_1_header))
+    ax3.imshow(conv_1)
+    if ind_phot_1 is not None:
+        ax3.plot(ind_phot_1[1], ind_phot_1[0], 'r.')
+    ax3.set_title('Conv Phot 1 wt')
+    
+    #phot_2_rep data
+    ax4 = fig.add_subplot(3, 3, 4, projection=wcs.WCS(phot_1_header))
+    ax4.imshow(phot_2_rep_data, cmap=vir)
+    ax4.set_title('Phot 2 Rep')
+    
+    #wt_2_rep data
+    ax5 = fig.add_subplot(3, 3, 5, projection=wcs.WCS(wt_1_header))
+    ax5.imshow(wt_2_rep_data, cmap=vir)
+    ax5.set_title('Phot 2 Rep wt')
+    
+    # conv_2_rep data
+    ax6 = fig.add_subplot(3, 3, 6, projection=wcs.WCS(wt_1_header))
+    ax6.imshow(conv_2_rep)
+    if ind_phot_2_rep is not None:
+        ax6.plot(ind_phot_2_rep[1], ind_phot_2_rep[0], 'r.')
+    ax6.set_title('Conv Phot 2 Rep wt')
+    
+    # phot_2 data
+    ax7 = fig.add_subplot(3, 3, 7, projection=wcs.WCS(phot_2_header))
+    ax7.imshow(phot_2_data, cmap=vir)
+    ax7.set_title('Phot 2')
+    
+    #wt_2 data
+    ax8 = fig.add_subplot(3, 3, 8, projection=wcs.WCS(wt_2_header))
+    ax8.imshow(wt_2_data, cmap=vir)
+    ax8.set_title('Phot 2 wt')
+    
+    # conv_2 data
+    ax9 = fig.add_subplot(3, 3, 9, projection=wcs.WCS(wt_2_header))
+    ax9.imshow(conv_2)
+    ax9.set_title('Conv Phot 2 wt')
+    
+    # Show Plot
+    plt.show()
+    
     return
-
-
-def data_preparer(filename_ch1, filename_ch2):
-    """ Wrapper function that calls both channel images and returns
-        both data arrays, with the Ch2 reprojected into Ch1 Header
-        coordinates.
-
-    Inputs:
-        - filename_ch1: string
-        - filename_ch2: string
-    Outputs:
-        - data_ch1: numpy.array
-        - data_ch2_rep: numpy.array
-    """
-    _, header_ch1, data_ch1 = data_grabber(filename_ch1)
-    _, header_ch2, data_ch2 = data_grabber(filename_ch2)
-
-    # Reprojection Ch2 in terms of Ch1 Header
-
-    data_ch2_rep, _ = reproject_fits(filename_ch2, header_ch1)
-
-    return data_ch1, header_ch1, data_ch2_rep, header_ch2
 
 
 def string_trimmer(morph):
@@ -295,7 +251,7 @@ def box_maker(center_indexes, BOX_SIZE):
     
     x_min = int(center_indexes[1] - (BOX_SIZE/2))
     x_max = int(center_indexes[1] + (BOX_SIZE/2))
-    y_min = int(center_indexes[1] - (BOX_SIZE/2))
-    y_max = int(center_indexes[1] + (BOX_SIZE/2))
+    y_min = int(center_indexes[0] - (BOX_SIZE/2))
+    y_max = int(center_indexes[0] + (BOX_SIZE/2))
     
     return x_min, x_max, y_min, y_max
