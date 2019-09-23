@@ -12,6 +12,7 @@ from astropy.convolution import convolve_fft, Box2DKernel
 import os
 from astropy.io import fits
 import glob
+import yaml
 
 from definitions import galaxy_dict_maker
 from definitions import name_splitter
@@ -27,11 +28,10 @@ from definitions import galaxy_visualizer
 from datetime import datetime
 startTime = datetime.now()
 
-import yaml
 # Import Necessary Parameters here
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-    
+
 IMAGE_DIR = cfg['parameters']['IMAGE_DIR']
 SAVE_DIR = cfg['parameters']['SAVE_DIR']
 
@@ -85,19 +85,19 @@ label_data = []
 
 #%%
 """ Here starts the Main Loop for Pre-Processing"""
-for index in range(5): #len(data['phot_1'])
+for index in range(5):  # len(data['phot_1'])
     print('Working on index: ', index, '/', len(data['phot_1']))
     phot_1_header, phot_1_data = data_grabber(data['phot_1'][index])
     phot_2_header, phot_2_data = data_grabber(data['phot_2'][index])
     wt_1_header, wt_1_data = data_grabber(data['1_wt'][index])
     wt_2_header, wt_2_data = data_grabber(data['2_wt'][index])
-    
+
     box_kernel = Box2DKernel(CONV_SIZE)
-    
+
     # Reproject 2 Data/Wt in Header 1 Coordinates
     phot_2_rep_data, _ = reproject_fits(data['phot_2'][index], phot_1_header)
     wt_2_rep_data, _ = reproject_fits(data['2_wt'][index], wt_1_header)
-    
+
     # Convolution for all wt images
     conv_1 = convolve_fft(wt_1_data,
                           box_kernel,
@@ -106,16 +106,16 @@ for index in range(5): #len(data['phot_1'])
                           box_kernel,
                           nan_treatment='fill')
     conv_2_rep = convolve_fft(wt_2_rep_data,
-                          box_kernel,
-                          nan_treatment='fill')
-    
+                              box_kernel,
+                              nan_treatment='fill')
+
     # Finding Max Coordinate in phot_1 and phot_2_rep images
     ind_phot_1 = np.unravel_index(np.argmax(conv_1, axis=None),
                                   conv_1.shape)
-    
+
     ind_phot_2_rep = np.unravel_index(np.argmax(conv_2_rep, axis=None),
                                       conv_2_rep.shape)
-    
+
     if SHOW_PLOTS:
         data_visualizer(phot_1_data, phot_1_header,
                         wt_1_data, wt_1_header, conv_1,
@@ -124,29 +124,28 @@ for index in range(5): #len(data['phot_1'])
                         wt_2_data, wt_2_header, conv_2,
                         ind_phot_1,
                         ind_phot_2_rep)
-    
+
     # Creating actual Phot_1 Dataset
     xmin1, xmax1, ymin1, ymax1 = box_maker(ind_phot_1, BOX_SIZE)
     phot_1_data_res = phot_1_data[ymin1:ymax1, xmin1:xmax1]
-    
+
     xmin2, xmax2, ymin2, ymax2 = box_maker(ind_phot_2_rep, BOX_SIZE)
     phot_2_rep_data_res = phot_2_rep_data[ymin2:ymax2, xmin2:xmax2]
-    
+
     if SHOW_PLOTS:
         galaxy_visualizer(phot_1_data_res, phot_2_rep_data_res)
-    
-    
+
     # Flattening Arrays and combining into one large array
     phot_1_flat = np.array(phot_1_data_res).flatten()
     phot_2_flat = np.array(phot_2_rep_data_res).flatten()
-    
+
     phot_data.append(np.concatenate((phot_1_flat, phot_2_flat)))
     label_data.append(string_trimmer(morphology[index]))
 
 
 #%%
 # FITS File creation and data saving
-    
+
 test_morphology = morphology[0:5]
 test_galaxies = galaxies[0:5]
 
@@ -166,12 +165,10 @@ morphology_column = fits.Column(name='morphology',
 # Creating ColDefs object
 cols = fits.ColDefs([galaxy_column,
                      morphology_column,
-                     data_column,
+#                    data_column,
                      label_column])
-    
+
 hdu = fits.BinTableHDU.from_columns(cols)
-
-
 
 if len(glob.glob(CURRENT_DIR + '*.fits')) > 0:
     file_name = glob.glob(CURRENT_DIR + '*.fits')
@@ -182,6 +179,5 @@ else:
     save_time = f'{datetime.now():%Y-%m-%d_%H:%M:%S}'
     fits_save = 'processed_data_' + save_time + '.fits'
     hdu.writeto(fits_save)
-    
-print("Time for Script to Complete: ", datetime.now() - startTime)
 
+print("Time for Script to Complete: ", datetime.now() - startTime)
