@@ -177,7 +177,7 @@ if len(glob.glob(CURRENT_DIR + '*.fits')) > 0:
     os.remove(file_name)
 else:
     save_time = f'{datetime.now():%Y-%m-%d_%H:%M:%S}'
-    fits_save = 'processed_data_' + save_time + '.fits'
+    fits_save = CURRENT_DIR + 'processed_data_' + save_time + '.fits'
     hdu.writeto(fits_save)
 
 print("Time for Script to Complete: ", datetime.now() - startTime)
