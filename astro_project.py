@@ -6,7 +6,6 @@ Created on Fri Aug 23 19:44:17 2019
 @author: samuelfielder
 """
 
-
 import numpy as np
 from astropy.convolution import convolve_fft, Box2DKernel
 import os
@@ -56,6 +55,9 @@ if cfg['parameters']['SHOW_PLOTS'] == 'False':
 else:
     SHOW_PLOTS = True
 
+# Setting Skips for Galaxy Loop
+skips = cfg['parameters']['GAL_SKIP']
+skips = [int(i) for i in skips]
 
 # Creating Nested List of Filenames
 data = galaxy_dict_maker(IMAGE_DIR)
@@ -85,8 +87,12 @@ phot_data = []
 label_data = []
 
 """ Here starts the Main Loop for Pre-Processing"""
-for index in range(5):  # len(data['phot_1'])
+for index in range(len(data['phot_1'])):
     print('Working on index: ', index, '/', len(data['phot_1']))
+    
+    # Skip Galaxies that are not working correctly
+    if index in skips:
+        continue
     phot_1_header, phot_1_data = data_grabber(data['phot_1'][index])
     phot_2_header, phot_2_data = data_grabber(data['phot_2'][index])
     wt_1_header, wt_1_data = data_grabber(data['1_wt'][index])
@@ -144,8 +150,6 @@ for index in range(5):  # len(data['phot_1'])
 
 
 # FITS File creation and data saving
-test_morphology = morphology[0:5]
-test_galaxies = galaxies[0:5]
 
 format_string_data = str(len(phot_data[0])) + 'D'
 
@@ -157,10 +161,10 @@ label_column = fits.Column(name='label',
                            array=label_data)
 galaxy_column = fits.Column(name='galaxy',
                             format='20A',
-                            array=test_galaxies)
+                            array=galaxies)
 morphology_column = fits.Column(name='morphology',
                                 format='20A',
-                                array=test_morphology)
+                                array=morphology)
 
 # Creating ColDefs object
 cols = fits.ColDefs([galaxy_column,

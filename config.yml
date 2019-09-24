@@ -12,3 +12,4 @@ parameters:
     CONV_SIZE: 300
     SHOW_PLOTS: False
     BOX_SIZE: 200
+    GAL_SKIP: [486,501,556,865,1307,1432]
